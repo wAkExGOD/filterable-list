@@ -1,6 +1,6 @@
-# Проект: Реактивное приложение для отображения постов с API
+# Реактивное приложение для отображения постов с API
 
-![image](https://github.com/wAkExGOD/filterable-list/assets/52173833/77c85615-07c9-44b5-aac3-d8b1e89d7e8a)
+![image](https://github.com/wAkExGOD/filterable-list/assets/52173833/ebeebe72-bc23-4cc1-b9df-f0d5ba774c57)
 
 ## Описание
 Используя технологии fetch и Promise, данное приложение позволяет отображать список постов из [API jsonplaceholder](https://jsonplaceholder.typicode.com/posts). Пользователь может фильтровать посты по их заголовку, сделав запрос к API и получив только те посты, заголовок которых содержит введенную строку.
