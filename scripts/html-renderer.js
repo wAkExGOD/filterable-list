@@ -1,21 +1,19 @@
-import { TABLE_HEADERS } from './constants.js'
 import { debounce } from './helpers.js'
 
 let lastScrollPosition = 0
 
 export function render(state, eventHandlers) {
   const { onTextChange, onScroll } = eventHandlers
-  const { loading, error, posts } = state
+  const { isLoading, error, posts } = state
 
+  const userCardsWrapperEl = document.querySelector('.userCardsWrapper')
   const loadingEl = document.querySelector('.loading')
   const errorEl = document.querySelector('.error')
-  const tableWrapperEl = document.querySelector('.tableWrapper')
-  const tableEl = document.createElement('table')
 
   errorEl.innerHTML = ''
-  tableWrapperEl.innerHTML = ''
+  userCardsWrapperEl.innerHTML = ''
 
-  if (loading) {
+  if (isLoading) {
     return loadingEl.classList.remove('hidden')
   }
 
@@ -29,18 +27,19 @@ export function render(state, eventHandlers) {
 
   if (!posts || !posts.length) {
     const notification = createNoPostsNotification()
-    return tableWrapperEl.appendChild(notification)
+    return userCardsWrapperEl.appendChild(notification)
   }
 
-  createTableHeaders(tableEl, Object.keys(TABLE_HEADERS))
-  createTableBody(tableEl, state)
+  const userCardsListEl = createUserCards(state)
 
-  tableWrapperEl.appendChild(tableEl)
+  userCardsWrapperEl.appendChild(userCardsListEl)
 
-  createInfiniteScroll(onScroll)
-  window.scrollTo({
-    top: lastScrollPosition,
-  })
+  createInfiniteScroll(onScroll, state)
+  if (!state.isFilterUpdated) {
+    window.scrollTo({
+      top: lastScrollPosition,
+    })
+  }
 }
 
 function createFilter(state, onTextChange) {
@@ -62,48 +61,46 @@ function createFilter(state, onTextChange) {
   inputEl.focus()
 }
 
-function createTableHeaders(tableEl, headers) {
-  const theadEl = document.createElement('thead')
-  const rowEl = document.createElement('tr')
+function createUserCards(state) {
+  const userCardsListEl = document.createElement('ul')
+  userCardsListEl.classList.add('userCards')
 
-  headers.forEach((header) => {
-    const tdEl = document.createElement('th')
-    tdEl.innerText = header
-    rowEl.appendChild(tdEl)
-  })
-  theadEl.appendChild(rowEl)
+  state.mergedUsersWithPosts.map((user) => {
+    const userCardEl = document.createElement('div')
+    userCardEl.classList.add('userCard')
 
-  tableEl.appendChild(theadEl)
-}
+    const userCardInfoEl = document.createElement('div')
+    userCardInfoEl.classList.add('userInfo')
+    userCardInfoEl.innerHTML = `
+      <p class="username">${user.name}</p>
+      <p>${user.phone || '-'}</p>
+      <p>${user.email || '-'}</p>
+    `
 
-function createTableBody(tableEl, state) {
-  const { posts } = state
-  const tbodyEl = document.createElement('tbody')
+    const userCardPostsEl = document.createElement('div')
+    userCardPostsEl.classList.add('userPosts')
 
-  posts.forEach((post) => {
-    const rowEl = document.createElement('tr')
+    user.posts.map((post) => {
+      const postEl = document.createElement('div')
+      const titleEl = document.createElement('h2')
+      const textEl = document.createElement('p')
+      postEl.classList.add('userPost')
+      titleEl.textContent = post.title
+      textEl.textContent = post.body
 
-    for (const key in TABLE_HEADERS) {
-      const cellEl = document.createElement('td')
-      cellEl.innerText = post[key] || '-'
+      postEl.appendChild(titleEl)
+      postEl.appendChild(textEl)
 
-      if (key === TABLE_HEADERS.user) {
-        const user = state.cachedUsers[post.userId]
+      userCardPostsEl.appendChild(postEl)
+    })
 
-        cellEl.innerHTML = `
-          <p>${user.name}</p>
-          <p>${user.phone}</p>
-          <p>${user.email}</p>
-        `
-      }
+    userCardEl.appendChild(userCardInfoEl)
+    userCardEl.appendChild(userCardPostsEl)
 
-      rowEl.appendChild(cellEl)
-    }
-
-    tbodyEl.appendChild(rowEl)
+    userCardsListEl.appendChild(userCardEl)
   })
 
-  tableEl.appendChild(tbodyEl)
+  return userCardsListEl
 }
 
 function createNoPostsNotification() {
@@ -114,28 +111,18 @@ function createNoPostsNotification() {
   return noPostsDiv
 }
 
-function createInfiniteScroll(handleScroll) {
-  const lastPostObserver = new IntersectionObserver(
-    (entries) => {
-      const lastPost = entries[0]
+function createInfiniteScroll(handleScroll, state) {
+  if (state.isAllPostsLoaded || state.isLoading) {
+    return
+  }
 
-      if (!lastPost.isIntersecting) {
-        return
-      }
-
+  window.addEventListener('scroll', async () => {
+    if (
+      Math.ceil(window.innerHeight + window.scrollY) >=
+      document.body.offsetHeight
+    ) {
       lastScrollPosition = window.scrollY
       handleScroll()
-      lastPostObserver.unobserve(lastPost.target)
-    },
-    {
-      rootMargin: '500px',
     }
-  )
-
-  const lastPostEl = document.querySelector(
-    '.tableWrapper table tbody tr:last-child'
-  )
-  if (lastPostEl) {
-    lastPostObserver.observe(lastPostEl)
-  }
+  })
 }
