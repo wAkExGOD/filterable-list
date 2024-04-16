@@ -58,7 +58,10 @@ function createFilter(state, onTextChange) {
   inputEl.addEventListener('input', handleSearch)
 
   filterWrapperEl.appendChild(inputEl)
-  inputEl.focus()
+
+  if (state.isFilterUpdated) {
+    inputEl.focus()
+  }
 }
 
 function createUserCards(state) {
